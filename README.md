@@ -1,1 +1,2 @@
-# qrcode
+
+node index.js
