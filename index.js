@@ -1,19 +1,48 @@
+import http from 'http';
 import QRCode from 'qrcode'
 
-const generateQR = async text => {
+const server = http.createServer(async (req, res) => {
+    if (req.method === 'GET' && req.url.startsWith('/image')) {
 
-    try {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const code = url.searchParams.get('code');
 
-        const qrCodeBase64 = await QRCode.toDataURL(text);
-        const image = await QRCode.toString(text);
+        if (code) {
+            try {
 
-        return { qrCodeBase64, image };
-    } catch (err) {
-        console.error(err)
+                const imageBuffer = await QRCode.toBuffer(code, {
+                    margin: 0.1,
+                    width: 350
+                });
+
+                res.writeHead(200, {
+                    'Content-Type': 'image/png',
+                    'Content-Length': imageBuffer.length
+                });
+
+                res.end(imageBuffer);
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    'error': 'image is unavailable'
+                }));
+            }
+        } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                'error': 'code is required'
+            }));
+        }
+    } else {
+        console.log('xtp');
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            'error': 'route not found'
+        }));
     }
-}
+});
 
-const res = await generateQR('dsdsdsHjkGxUOFBpU6tEVIEqdsKK0HsBnV4=');
-
-console.log(res.image);
-console.log(res.qrCodeBase64);
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`server on ${PORT}`);
+});
